@@ -1,104 +1,67 @@
 {
-  "rules": [
-    {
-      "tag": "ai-agent-platform-docs",
-      "patterns": ["**/*.md", "**/*.rst", "**/*.txt"],
-      "action": "allow"
-    },
-    {
-      "tag": "python-source",
-      "patterns": ["**/*.py", "**/*.pyi"],
-      "action": "allow"
-    },
-    {
-      "tag": "config-files",
-      "patterns": [
-        "pyproject.toml",
-        "requirements*.txt",
-        "setup.py",
-        "setup.cfg",
-        "tox.ini",
-        "pytest.ini",
-        ".env*",
-        "docker-compose*.yml",
-        "Dockerfile*"
-      ],
-      "action": "allow"
-    },
-    {
-      "tag": "ci-cd",
-      "patterns": [
-        ".github/**/*",
-        ".gitlab-ci.yml",
-        "Jenkinsfile",
-        ".travis.yml",
-        ".circleci/**/*"
-      ],
-      "action": "allow"
-    },
-    {
-      "tag": "test-files",
-      "patterns": [
-        "tests/**/*",
-        "test_*.py",
-        "*_test.py",
-        "conftest.py"
-      ],
-      "action": "allow"
-    },
-    {
-      "tag": "data-files",
-      "patterns": [
-        "data/**/*.json",
-        "data/**/*.yaml",
-        "data/**/*.yml",
-        "data/**/*.csv",
-        "**/*.json",
-        "**/*.yaml",
-        "**/*.yml"
-      ],
-      "action": "allow"
-    },
-    {
-      "tag": "sensitive-files",
-      "patterns": [
-        "**/.env",
-        "**/secrets/**/*",
-        "**/*.key",
-        "**/*.pem",
-        "**/*.p12",
-        "**/*.pfx",
-        "**/id_rsa*",
-        "**/id_ed25519*",
-        "**/*_key*",
-        "**/private_key*"
-      ],
-      "action": "deny"
-    },
-    {
-      "tag": "cache-and-temp",
-      "patterns": [
-        "__pycache__/**/*",
-        "*.pyc",
-        "*.pyo",
-        "*.pyd",
-        ".pytest_cache/**/*",
-        ".mypy_cache/**/*",
-        ".ruff_cache/**/*",
-        "*.egg-info/**/*",
-        "build/**/*",
-        "dist/**/*",
-        ".tox/**/*",
-        "node_modules/**/*",
-        ".venv/**/*",
-        "venv/**/*",
-        "env/**/*",
-        "*.log",
-        "*.tmp"
-      ],
-      "action": "deny"
-    }
-  ],
+  "permissions": {
+    "allow": [
+      "Read(**/*.py)",
+      "Read(**/*.md)",
+      "Read(**/*.txt)",
+      "Read(**/*.json)",
+      "Read(**/*.yaml)",
+      "Read(**/*.yml)",
+      "Read(**/*.toml)",
+      "Read(**/requirements*.txt)",
+      "Read(**/setup.py)",
+      "Read(**/Dockerfile*)",
+      "Read(**/docker-compose*.yml)",
+      "Read(.github/**/*)",
+      "Read(tests/**/*)",
+      "Edit(**/*.py)",
+      "Edit(**/*.md)",
+      "Edit(**/*.txt)",
+      "Edit(**/*.json)",
+      "Edit(**/*.yaml)",
+      "Edit(**/*.yml)",
+      "Edit(**/*.toml)",
+      "Edit(tests/**/*)",
+      "Write(src/**/*)",
+      "Write(ai_agent_platform/**/*)",
+      "Write(tests/**/*)",
+      "Write(docs/**/*)",
+      "Write(**/*.py)",
+      "Write(**/*.md)",
+      "Write(**/*.json)",
+      "Write(**/*.yaml)",
+      "Write(**/*.yml)",
+      "Bash(git init:*)",
+      "Bash(git branch:*)",
+      "Bash(gh auth:*)",
+      "Bash(gh repo create:*)",
+      "Bash(git remote add:*)",
+      "Bash(uvicorn:*)",
+      "Bash(fastapi:*)",
+      "Bash(pip install -e .:*)",
+      "Bash(pip install -e .[dev]:*)",
+      "Bash(python -m ai_agent_platform:*)"
+    ],
+    "deny": [
+      "Read(**/.env)",
+      "Read(**/secrets/**/*)",
+      "Read(**/*.key)",
+      "Read(**/*.pem)",
+      "Read(**/*private*)",
+      "Edit(**/.env)",
+      "Edit(**/secrets/**/*)",
+      "Edit(**/*.key)",
+      "Edit(**/*.pem)",
+      "Write(**/.env)",
+      "Write(**/secrets/**/*)",
+      "Write(**/*.key)",
+      "Write(**/*.pem)",
+      "Bash(rm -rf:*)",
+      "Bash(sudo:*)",
+      "Bash(chmod 777:*)"
+    ],
+    "defaultMode": "acceptEdits"
+  },
   "mcp": {},
   "systemPrompt": "You are working on the Universal AI Agent Platform - a factory for creating specialized AI agents from PRDs. This platform is completely independent and universal, designed to create agents for any task without hardcoded assumptions. Focus on reusable, scalable architecture using LangChain, LlamaIndex, FastAPI, PostgreSQL, and Redis. Always refer to the project documentation and maintain the agent factory pattern.",
   "customInstructions": "IMPORTANT: This is a universal AI agent platform project. Always:\n1. Read project documentation first (README.md, PLATFORM_ARCHITECTURE.md, PROJECT_CHARTER.md)\n2. Maintain universal, PRD-driven architecture - no hardcoded solutions\n3. Focus on agent factory patterns and reusable infrastructure\n4. Use the established tech stack: LangChain, LlamaIndex, FastAPI, PostgreSQL, Redis\n5. Follow professional development practices with proper testing and documentation\n6. Keep everything independent - no integration with external applications\n7. Update CLAUDE_CODE_SESSION_HANDOFF.md with progress and decisions",
