@@ -198,3 +198,8 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+# =============================================================================
+# CLAUDE CODE SETTINGS (keep settings but ignore sensitive files)
+# =============================================================================
+# .claude/settings.local.json is committed for project configuration
+# Add any sensitive Claude settings here if needed
