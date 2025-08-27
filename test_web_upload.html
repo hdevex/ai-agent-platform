@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Excel Upload</title>
+</head>
+<body>
+    <h2>Test Excel Upload to Dato Ahmad</h2>
+    
+    <form id="uploadForm">
+        <input type="file" id="fileInput" accept=".xlsx,.xls" required>
+        <br><br>
+        <input type="text" id="queryInput" placeholder="Ask about the file..." value="list worksheet names">
+        <br><br>
+        <button type="submit">Upload & Analyze</button>
+    </form>
+    
+    <div id="result" style="margin-top: 20px; padding: 10px; border: 1px solid #ccc; display: none;">
+        <h3>Result:</h3>
+        <pre id="resultText"></pre>
+    </div>
+    
+    <script>
+    document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const fileInput = document.getElementById('fileInput');
+        const queryInput = document.getElementById('queryInput');
+        const result = document.getElementById('result');
+        const resultText = document.getElementById('resultText');
+        
+        if (!fileInput.files[0]) {
+            alert('Please select a file');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        formData.append('analysis_type', 'general');
+        formData.append('specific_query', queryInput.value);
+        
+        try {
+            resultText.textContent = 'Processing...';
+            result.style.display = 'block';
+            
+            const response = await fetch('http://localhost:8003/excel/upload', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                resultText.textContent = data.analysis_preview;
+            } else {
+                resultText.textContent = `Error: ${response.status} ${response.statusText}`;
+            }
+        } catch (error) {
+            resultText.textContent = `Error: ${error.message}`;
+        }
+    });
+    </script>
+</body>
+</html>

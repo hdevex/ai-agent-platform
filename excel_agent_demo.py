@@ -661,7 +661,7 @@ if __name__ == "__main__":
     print("👔 Specialized Agent: Dato' Ahmad Rahman - Senior Finance Manager")
     print("🇲🇾 Expertise: Malaysian Investment Holdings & Subsidiaries")
     print(f"📊 Excel Support: {'✅ Available' if EXCEL_SUPPORT else '❌ Install pandas & openpyxl'}")
-    print("📈 Access the API at: http://localhost:8001")
-    print("📚 API docs at: http://localhost:8001/docs")
+    print("📈 Access the API at: http://localhost:8002")
+    print("📚 API docs at: http://localhost:8002/docs")
     
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    uvicorn.run(app, host="0.0.0.0", port=8002)
