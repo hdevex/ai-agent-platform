@@ -19,7 +19,7 @@
       "Read(tests/**/*)",
       "Read(docs/**/*)",
       "Edit(**/*.py)",
-      "Edit(**/*.md)", 
+      "Edit(**/*.md)",
       "Edit(**/*.rst)",
       "Edit(**/*.txt)",
       "Edit(**/*.json)",
@@ -79,7 +79,7 @@
       "Bash(curl http://localhost:*)",
       "Bash(curl https://localhost:*)",
       "Task(subagent_type:general-purpose)",
-      "Task(subagent_type:backend-architect)", 
+      "Task(subagent_type:backend-architect)",
       "Task(subagent_type:frontend-architect)",
       "Task(subagent_type:debug-specialist)",
       "Task(subagent_type:integration-specialist)",
@@ -107,12 +107,14 @@
       "Write(**/package.json)",
       "Write(**/pyproject.toml)",
       "Write(**/docker-compose.yml)",
-      "Write(**/Dockerfile)"
+      "Write(**/Dockerfile)",
+      "Bash(PYTHONPATH=/mnt/c/Users/nvntr/Documents/ai_agent_platform/src python -m pytest tests/integration/test_lm_studio_integration.py::TestLMStudioIntegration::test_health_check_success -v)",
+      "Bash(PYTHONPATH=/mnt/c/Users/nvntr/Documents/ai_agent_platform/src python -c \"import ai_agent_platform.config; print(''Configuration import successful'')\")"
     ],
     "deny": [
       "Read(**/.env)",
       "Read(**/secrets/**/*)",
-      "Read(**/*.key)", 
+      "Read(**/*.key)",
       "Read(**/*.pem)",
       "Read(**/*private*)",
       "Read(**/*password*)",
@@ -187,15 +189,27 @@
       "enabled": true,
       "description": "Comprehensive protection against destructive Docker operations",
       "blockedCommands": [
-        "docker rm", "docker rmi", "docker volume rm", "docker image rm",
-        "docker system prune", "docker container rm", "docker network rm", 
-        "docker-compose rm", "docker-compose down --volumes"
+        "docker rm",
+        "docker rmi",
+        "docker volume rm",
+        "docker image rm",
+        "docker system prune",
+        "docker container rm",
+        "docker network rm",
+        "docker-compose rm",
+        "docker-compose down --volumes"
       ]
     },
     "dataProtection": {
       "enabled": true,
       "description": "Protect sensitive files and prevent data loss",
-      "sensitivePatterns": ["**/.env", "**/secrets/**", "**/*.key", "**/*.pem", "**/*private*"]
+      "sensitivePatterns": [
+        "**/.env",
+        "**/secrets/**",
+        "**/*.key",
+        "**/*.pem",
+        "**/*private*"
+      ]
     },
     "autonomousDevelopment": {
       "enabled": true,

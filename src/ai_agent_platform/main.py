@@ -16,6 +16,12 @@ from fastapi.security import HTTPBearer
 
 from .config import config
 from .logging_config import setup_logging
+from .api.agents import router as agents_router
+from .api.rag import router as rag_router
+from .api.tools import router as tools_router
+from .llm.providers import get_llm_manager
+from .database.connection import get_db_engine
+from .rag.vector_store import get_rag_system
 
 # Security
 security = HTTPBearer(auto_error=False)
@@ -160,25 +166,60 @@ def create_app() -> FastAPI:
     @app.get("/health/detailed")
     async def detailed_health_check() -> Dict[str, Any]:
         """Detailed health check with system information."""
-        # TODO: Add database, Redis, vector DB health checks
+        services_status = {}
+        
+        # Check LLM service
+        try:
+            llm_manager = get_llm_manager()
+            llm_health = await llm_manager.health_check()
+            services_status["llm"] = llm_health
+        except Exception as e:
+            services_status["llm"] = {"status": "unhealthy", "error": str(e)}
+        
+        # Check database
+        try:
+            from sqlalchemy import text
+            engine = get_db_engine()
+            async with engine.connect() as conn:
+                await conn.execute(text("SELECT 1"))
+            services_status["database"] = {"status": "healthy"}
+        except Exception as e:
+            services_status["database"] = {"status": "unhealthy", "error": str(e)}
+        
+        # Check RAG system
+        try:
+            rag_system = get_rag_system()
+            rag_health = await rag_system.health_check()
+            services_status["rag"] = rag_health
+        except Exception as e:
+            services_status["rag"] = {"status": "unhealthy", "error": str(e)}
+        
+        # Overall status
+        overall_status = "healthy" if all(
+            service.get("status") == "healthy" for service in services_status.values()
+        ) else "degraded"
+        
         return {
-            "status": "healthy",
+            "status": overall_status,
             "platform": {
                 "name": config.platform.platform_name,
                 "version": config.platform.platform_version,
                 "environment": config.platform.environment,
             },
-            "services": {
-                "database": "pending",  # Will implement with DB connection
-                "redis": "pending",  # Will implement with Redis connection
-                "vector_db": "pending",  # Will implement with vector DB
-            },
+            "services": services_status,
             "configuration": {
                 "max_concurrent_agents": config.platform.max_concurrent_agents,
                 "agent_timeout": config.platform.agent_timeout_seconds,
+                "llm_provider": config.llm.llm_provider,
+                "llm_model": config.llm.llm_model_name,
             },
             "timestamp": time.time(),
         }
+
+    # Include API routers
+    app.include_router(agents_router, prefix="/api")
+    app.include_router(rag_router, prefix="/api")
+    app.include_router(tools_router, prefix="/api")
 
     # Root endpoint
     @app.get("/")

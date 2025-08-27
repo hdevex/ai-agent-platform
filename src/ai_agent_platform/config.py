@@ -69,6 +69,24 @@ class DatabaseConfig(BaseSettings):
         return f"redis://{password_part}{self.redis_host}:{self.redis_port}/{self.redis_db}"
 
 
+class LLMConfig(BaseSettings):
+    """LLM and AI model configuration."""
+    
+    llm_provider: str = "lm_studio"
+    llm_base_url: str = "http://192.168.101.70:1234/v1"
+    llm_model_name: str = "openai/gpt-oss-20b"
+    llm_temperature: float = 0.1
+    llm_max_tokens: int = 4000
+    
+    # OpenAI fallback configuration
+    openai_api_key: Optional[str] = None
+    openai_model: str = "gpt-4"
+    
+    # Embedding configuration
+    embedding_provider: str = "local"
+    embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
+
+
 class PlatformConfig(BaseSettings):
     """Main platform configuration."""
 
@@ -132,6 +150,7 @@ class Config:
         self.platform = PlatformConfig()
         self.database = DatabaseConfig()
         self.security = SecurityConfig()
+        self.llm = LLMConfig()
 
     def _load_env_manually(self, env_path: Path):
         """Manually load environment variables from file."""
@@ -172,6 +191,9 @@ class Config:
             ),
             "security": self.security.model_dump(
                 exclude={"jwt_secret_key", "api_key"} if not include_secrets else set()
+            ),
+            "llm": self.llm.model_dump(
+                exclude={"openai_api_key"} if not include_secrets else set()
             ),
         }
         return config_dict
