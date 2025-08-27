@@ -174,19 +174,7 @@
     "autoCommitProgress": true,
     "progressReportingInterval": 30
   },
-  "mcp": {
-    "servers": {
-      "serena": {
-        "enabled": true,
-        "description": "Code navigation and symbol search for AI platform development"
-      },
-      "context7": {
-        "enabled": true, 
-        "description": "Advanced code analysis for agent architecture development"
-      }
-    }
-  },
-  "enabledMcpjsonServers": ["serena", "context7"],
+  "mcp": {},
   "systemPrompt": "You are working on the Universal AI Agent Platform - a factory for creating specialized AI agents from PRDs. This platform is completely independent and universal, designed to create agents for any task without hardcoded assumptions. Focus on reusable, scalable architecture using LangChain, LlamaIndex, FastAPI, PostgreSQL, and Redis. Always refer to the project documentation and maintain the agent factory pattern.",
   "customInstructions": "IMPORTANT: This is a universal AI agent platform project. Always:\n1. Read project documentation first (README.md, PLATFORM_ARCHITECTURE.md, PROJECT_CHARTER.md)\n2. Maintain universal, PRD-driven architecture - no hardcoded solutions\n3. Focus on agent factory patterns and reusable infrastructure\n4. Use the established tech stack: LangChain, LlamaIndex, FastAPI, PostgreSQL, Redis\n5. Follow professional development practices with proper testing and documentation\n6. Keep everything independent - no integration with external applications\n7. Update CLAUDE_CODE_SESSION_HANDOFF.md with progress and decisions\n8. NEVER run destructive Docker commands - they are strictly forbidden\n9. Commit progress regularly for user review when they return",
   "testCommand": "pytest tests/ -v --cov=ai_agent_platform --cov-report=term-missing",

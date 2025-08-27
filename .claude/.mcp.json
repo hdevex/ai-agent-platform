@@ -1,0 +1,40 @@
+{
+  "servers": {
+    "serena": {
+      "command": "npx",
+      "args": ["@anthropic-ai/mcp-server-serena"],
+      "env": {
+        "NODE_ENV": "production"
+      },
+      "metadata": {
+        "description": "Code navigation and symbol search for AI platform development",
+        "features": ["file_search", "symbol_search", "directory_listing"],
+        "version": "latest"
+      }
+    },
+    "context7": {
+      "command": "context7-mcp-server",
+      "args": [],
+      "env": {
+        "CONTEXT7_MODE": "development"
+      },
+      "metadata": {
+        "description": "Advanced code analysis and refactoring support",
+        "features": ["code_analysis", "refactoring", "pattern_recognition"],
+        "version": "latest"
+      }
+    }
+  },
+  "globalSettings": {
+    "mcpTimeout": 30000,
+    "retryAttempts": 3,
+    "logLevel": "info"
+  },
+  "projectConfig": {
+    "name": "Universal AI Agent Platform",
+    "description": "Factory for creating specialized AI agents from PRDs",
+    "mcpScope": "project",
+    "autoStart": true,
+    "healthCheck": true
+  }
+}
