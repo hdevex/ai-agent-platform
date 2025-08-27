@@ -129,15 +129,24 @@ class TokenEfficientDataRetriever:
             if target_sheets:
                 # User mentioned specific sheets
                 sheets_to_search = [s for s in sheets_info.keys() if any(target in s for target in target_sheets)]
+                # If no sheets matched, search all sheets (fallback)
+                if not sheets_to_search:
+                    sheets_to_search = list(sheets_info.keys())
             else:
                 # Search all sheets but prioritize by size (smaller first for efficiency)
                 sheets_to_search = sorted(sheets_info.keys(), key=lambda s: sheets_info[s]["rows"])
             
             # Get data based on intent
-            for intent, score in query_analysis.get("intent_scores", {}).items():
+            intent_scores = query_analysis.get("intent_scores", {})
+
+            # If no intent has high confidence (>0.5), default to entity_search for company queries
+            if not any(score >= 0.5 for score in intent_scores.values()) and any(word in user_question.lower() for word in ['company', 'companies', 'name', 'names', 'entity', 'entities']):
+                intent_scores['entity_search'] = 1.0
+
+            for intent, score in intent_scores.items():
                 if score < 0.5:
                     continue
-                    
+
                 if intent == "entity_search":
                     # Find entities (companies, names, etc.)
                     for sheet in sheets_to_search[:3]:  # Limit to 3 sheets for efficiency

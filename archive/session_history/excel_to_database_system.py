@@ -16,9 +16,11 @@ import openpyxl
 from openpyxl import load_workbook
 import httpx
 
-# Database and file paths
-DATABASE_PATH = "/mnt/c/Users/nvntr/Documents/ai_agent_platform/excel_data.db"
-EXCEL_FILES_PATH = "/mnt/c/Users/nvntr/Documents/ai_agent_platform/data/input"
+# Database and file paths - Dynamic path detection
+import os
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATABASE_PATH = os.path.join(PROJECT_ROOT, "excel_data.db")
+EXCEL_FILES_PATH = os.path.join(PROJECT_ROOT, "data", "input")
 
 # LM Studio configuration for AI analysis
 LM_STUDIO_BASE_URL = "http://192.168.101.70:1234/v1"
@@ -207,13 +209,29 @@ Provide structured analysis in JSON format when requested, or clear explanations
                     }
                 }
                 
-                # Read all cells
-                for row_num in range(1, min(worksheet.max_row + 1, 200)):  # Limit to first 200 rows
-                    for col_num in range(1, min(worksheet.max_column + 1, 50)):  # Limit to first 50 columns
+                # Read cells more efficiently - focus on data-rich areas
+                max_rows_to_read = min(worksheet.max_row, 50)  # Reduced from 200 to 50 rows
+                max_cols_to_read = min(worksheet.max_column, 20)  # Reduced from 50 to 20 columns
+
+                # First, try to find the data range by scanning for non-empty cells
+                data_rows = []
+                for row_num in range(1, min(worksheet.max_row + 1, max_rows_to_read)):
+                    row_has_data = False
+                    for col_num in range(1, min(worksheet.max_column + 1, max_cols_to_read)):
+                        cell = worksheet.cell(row=row_num, column=col_num)
+                        if cell.value is not None and str(cell.value).strip():
+                            row_has_data = True
+                            break
+                    if row_has_data:
+                        data_rows.append(row_num)
+
+                # Read only rows that have data
+                for row_num in data_rows[:30]:  # Limit to 30 data-rich rows
+                    for col_num in range(1, min(worksheet.max_column + 1, max_cols_to_read)):
                         cell = worksheet.cell(row=row_num, column=col_num)
                         cell_value = cell.value
-                        
-                        if cell_value is not None:
+
+                        if cell_value is not None and str(cell_value).strip():
                             column_letter = openpyxl.utils.get_column_letter(col_num)
                             cell_address = f"{column_letter}{row_num}"
                             
@@ -307,12 +325,17 @@ Provide structured analysis in JSON format when requested, or clear explanations
         try:
             cursor = self.connection.cursor()
             
-            # Get AI analysis of the file
-            ai_context = self._build_ai_context(file_data)
-            ai_summary = await self.call_ai_analysis(
-                "Analyze this Excel file and provide a brief summary of its business purpose and data types.",
-                ai_context
-            )
+            # Get AI analysis of the file (optional - don't fail if LM Studio is unavailable)
+            ai_summary = "Excel file processed successfully"
+            try:
+                ai_context = self._build_ai_context(file_data)
+                ai_summary = await self.call_ai_analysis(
+                    "Analyze this Excel file and provide a brief summary of its business purpose and data types.",
+                    ai_context
+                )
+            except Exception as e:
+                print(f"⚠️  AI analysis failed (continuing without it): {e}")
+                ai_summary = f"Excel file processed successfully (AI analysis unavailable: {str(e)})"
             
             # Insert file record
             cursor.execute("""

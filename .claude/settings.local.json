@@ -112,7 +112,12 @@
       "Bash(PYTHONPATH=/mnt/c/Users/nvntr/Documents/ai_agent_platform/src python -c \"import ai_agent_platform.config; print(''Configuration import successful'')\")",
       "Bash(git rev-list:*)",
       "Bash(PYTHONPATH=/mnt/c/Users/nvntr/Documents/ai_agent_platform/src python -m ai_agent_platform.main)",
-      "Bash(ss:*)"
+      "Bash(ss:*)",
+      "Read(/mnt/c/Users/nvntr/Documents/ai_agent_platform/**)",
+      "Read(/mnt/c/Users/nvntr/Documents/ai_agent_platform/src/**)",
+      "Read(/mnt/c/Users/nvntr/Documents/ai_agent_platform/**)",
+      "Read(/mnt/c/Users/nvntr/Documents/ai_agent_platform/**)",
+      "Read(/mnt/c/Users/nvntr/Documents/ai_agent_platform/**)"
     ],
     "deny": [
       "Read(**/.env)",

@@ -10,6 +10,7 @@ import os
 import json
 import time
 import uuid
+import tempfile
 from typing import Dict, Any, List, Optional
 
 import uvicorn
@@ -50,6 +51,7 @@ rag_db: Dict[str, List[Dict[str, Any]]] = {
 }
 
 # LM Studio configuration
+from real_excel_chat_system import IntelligentQueryAnalyzer, TokenEfficientDataRetriever
 LM_STUDIO_BASE_URL = "http://192.168.101.70:1234/v1"
 LM_STUDIO_MODEL = "openai/gpt-oss-20b"
 
@@ -177,8 +179,8 @@ async def startup_event():
         }
         rag_db["malaysian_finance"].append(document)
     
-    print("✅ Dato' Ahmad Rahman - Senior Finance Manager initialized")
-    print(f"📚 {len(knowledge_base)} Malaysian finance knowledge documents loaded")
+    print("SUCCESS: Dato' Ahmad Rahman - Senior Finance Manager initialized")
+    print(f"Loaded {len(knowledge_base)} Malaysian finance knowledge documents")
 
 
 @app.get("/")
@@ -201,6 +203,137 @@ async def root():
         },
         "message": "Selamat datang! I'm here to help with your investment holdings and financial analysis."
     }
+
+# ---------- NEW ENDPOINTS ----------
+def parse_query(raw: str) -> Dict[str, Any]:
+    """Convenience wrapper around the analyzer.
+
+    Returns a dict containing intent scores and target sheets so that callers can
+    reuse the same logic without re‑instantiating the analyzer each time."""
+    analyzer = IntelligentQueryAnalyzer()
+    return analyzer.analyze_query(raw or "")
+
+@app.post("/excel/upload")
+async def upload_excel(file: UploadFile = File(...), specific_query: Optional[str] = Form(None)):
+    """Upload Excel file and get REAL AI analysis using RealExcelChatSystem."""
+    content = await file.read()
+    uploaded_files[file.filename] = {
+        "content": content,
+        "timestamp": time.time(),
+    }
+
+    # Process and store the Excel file in the database properly
+    import sys
+    import os
+    sys.path.append(os.path.dirname(__file__))
+
+    try:
+        # DEBUG: Add explicit debug info to response
+        debug_info = []
+        debug_info.append("STARTING EXCEL PROCESSING...")
+
+        # Save uploaded file temporarily for processing
+        temp_dir = tempfile.mkdtemp()
+        temp_file_path = os.path.join(temp_dir, file.filename)
+        debug_info.append(f"Created temp file: {temp_file_path}")
+
+        with open(temp_file_path, 'wb') as f:
+            f.write(content)
+        debug_info.append("File saved to temp location")
+
+        # Use the proper Excel to Database system
+        from excel_to_database_system import ExcelDatabaseSystem
+        debug_info.append("Imported ExcelDatabaseSystem")
+
+        db_system = ExcelDatabaseSystem()
+        debug_info.append("Created ExcelDatabaseSystem instance")
+
+        try:
+            # Step 1: Extract data from Excel file
+            debug_info.append(f"Starting extract_excel_data for {temp_file_path}...")
+            file_data = db_system.extract_excel_data(temp_file_path)
+            debug_info.append(f"Extraction complete. Found {len(file_data.get('sheets_data', {}))} sheets")
+
+            # Step 2: Store in database with AI analysis
+            if file_data and file_data.get("sheets_data") and len(file_data.get("sheets_data", {})) > 0:
+                debug_info.append("Starting store_in_database...")
+                file_id = await db_system.store_in_database(file_data)
+                debug_info.append(f"Database storage complete. File ID: {file_id}")
+
+                sheets_data = file_data.get("sheets_data", {})
+                result = {
+                    "success": True,
+                    "file_id": file_id,
+                    "sheets_count": len(sheets_data),
+                    "total_cells": sum(len(sheet.get("cells", [])) for sheet in sheets_data.values()),
+                    "sheet_names": list(sheets_data.keys())
+                }
+                debug_info.append(f"Final result: {result}")
+            else:
+                result = {"success": False, "error": "No data extracted from Excel file"}
+                debug_info.append(f"Extraction failed: {file_data}")
+
+        except Exception as e:
+            debug_info.append(f"ERROR during processing: {str(e)}")
+            import traceback
+            error_details = traceback.format_exc()
+            debug_info.append(f"Full error: {error_details}")
+            result = {"success": False, "error": str(e)}
+
+        # Clean up temp file
+        os.unlink(temp_file_path)
+        os.rmdir(temp_dir)
+
+        if result["success"]:
+            preview = f"SUCCESS: Excel file '{file.filename}' processed and stored successfully!\n"
+            preview += f"Found {result['sheets_count']} sheets with {result['total_cells']} cells\n"
+            preview += f"Sheets: {', '.join(result['sheet_names'][:3])}{'...' if len(result['sheet_names']) > 3 else ''}\n\n"
+            preview += "DEBUG INFO:\n"
+            preview += f"- File ID: {result['file_id']}\n"
+            preview += f"- Sheets processed: {result['sheet_names']}\n\n"
+            preview += "PROCESSING LOG:\n" + "\n".join(f"- {info}" for info in debug_info) + "\n\n"
+            preview += "You can now ask questions about this data!\n"
+            preview += "Try: 'list company names', 'what is the revenue', 'show me PNL data'"
+
+            return ExcelUploadResponse(
+                message="File processed and stored in database successfully",
+                filename=file.filename,
+                status="success",
+                analysis_preview=preview,
+            )
+        else:
+            return ExcelUploadResponse(
+                message="File uploaded but processing failed",
+                filename=file.filename,
+                status="error",
+                analysis_preview=f"Error: {result.get('error', 'Unknown error')}",
+            )
+
+    except Exception as e:
+        return ExcelUploadResponse(
+            message="File upload failed",
+            filename=file.filename,
+            status="error",
+            analysis_preview=f"Error: {str(e)}",
+        )
+
+@app.post("/chat")
+async def chat_endpoint(request: ChatRequest):
+    print(f"🔍 CHAT ENDPOINT 1 called with: {request.message}")
+    analysis = parse_query(request.message)
+    retriever = TokenEfficientDataRetriever()
+    relevant_data = retriever.get_relevant_data(analysis, max_tokens=1500)
+    print(f"📊 Retrieved {len(relevant_data)} data items")
+    context_texts = [item.get("data", "") for item in relevant_data]
+    system_prompt = "You are a finance analyst. Use the following data: " + "\n".join(context_texts)
+    messages = [{"role": "system", "content": system_prompt}, {"role": "user", "content": request.message}]
+    ai_response = await call_lm_studio(messages)
+    return ChatResponse(
+        response=ai_response,
+        agent_name=request.agent_name,
+        execution_time_ms=int((time.time() - request.__dict__.get("timestamp", 0)) * 1000),
+        sources_used=[item.get("sheet", "") for item in relevant_data],
+    )
 
 
 @app.get("/demo", response_class=HTMLResponse)
@@ -500,23 +633,30 @@ async def health_check():
 @app.post("/chat", response_model=ChatResponse)
 async def chat_with_dato_ahmad(request: ChatRequest):
     """Chat with Dato' Ahmad Rahman using REAL Excel data."""
+    print(f"🎯 CHAT ENDPOINT 2 (RealExcelChatSystem) called with: {request.message}")
     start_time = time.time()
-    
+
     # Import and use the REAL system
     import sys
     import os
     sys.path.append(os.path.dirname(__file__))
     from real_excel_chat_system import RealExcelChatSystem
-    
+
     try:
         # Use REAL Excel data integration
+        print("🚀 Initializing RealExcelChatSystem...")
         real_system = RealExcelChatSystem()
+        print("📡 Calling chat_with_excel_data...")
         response_text = await real_system.chat_with_excel_data(request.message)
-        
+        print(f"✅ RealExcelChatSystem response: {response_text[:100]}...")
+
         sources_used = ["Real Excel Database", "TURN-COS-GP_RM", "PNL", "GROUP-PL_RM"]
-        
+
     except Exception as e:
         # Fallback but indicate it's not using Excel data
+        print(f"❌ RealExcelChatSystem error: {e}")
+        import traceback
+        traceback.print_exc()
         response_text = f"I apologize, I'm currently unable to access your Excel data (Error: {str(e)}). For Excel data analysis, please ensure the database is properly connected."
         sources_used = ["Error - No Excel Data Access"]
     
@@ -569,128 +709,34 @@ async def upload_excel_file(
         temp_file.close()
         
         try:
-            # Read actual Excel file data
-            workbook = openpyxl.load_workbook(temp_file.name, read_only=True)
-            sheet_names = workbook.sheetnames
-            
-            # SMART ANALYSIS BASED ON SPECIFIC QUERY
-            sheets_info = {}
-            relevant_data = []
-            
-            # Determine which sheets to focus on based on query
-            focus_sheets = sheet_names
+            # Use the REAL Excel Chat System for intelligent analysis
+            import sys
+            import os
+            sys.path.append(os.path.dirname(__file__))
+            from real_excel_chat_system import RealExcelChatSystem
+
+            # Initialize the real system
+            real_system = RealExcelChatSystem()
+
+            # Get intelligent analysis using the real system
             if specific_query:
-                query_lower = specific_query.lower()
-                # If query mentions specific sheet, focus on that
-                mentioned_sheets = [name for name in sheet_names if name.lower() in query_lower]
-                if mentioned_sheets:
-                    focus_sheets = mentioned_sheets
-            
-            for sheet_name in sheet_names:
-                worksheet = workbook[sheet_name]
-                sheet_info = {
-                    "rows": worksheet.max_row,
-                    "columns": worksheet.max_column,
-                    "sample_data": []
-                }
-                
-                # If this sheet is focus of query, do deeper analysis
-                if sheet_name in focus_sheets and specific_query:
-                    print(f"🔍 Deep analysis of {sheet_name} for query: {specific_query}")
-                    
-                    # Look for company names, entities, etc.
-                    companies_found = []
-                    financial_terms = []
-                    
-                    # Read more data from focused sheets (up to 100 rows)
-                    max_rows_to_scan = min(100, worksheet.max_row)
-                    max_cols_to_scan = min(20, worksheet.max_column)
-                    
-                    for row in range(1, max_rows_to_scan + 1):
-                        for col in range(1, max_cols_to_scan + 1):
-                            cell = worksheet.cell(row=row, column=col)
-                            if cell.value and isinstance(cell.value, str):
-                                cell_text = str(cell.value).strip()
-                                if len(cell_text) > 3:
-                                    # Look for company patterns
-                                    if any(pattern in cell_text.lower() for pattern in 
-                                          ['sdn bhd', 'berhad', 'bhd', 'corporation', 'company', 'construction', 'holdings']):
-                                        if cell_text not in companies_found and len(cell_text) < 100:
-                                            companies_found.append(cell_text)
-                                    
-                                    # Look for financial terms if query mentions them
-                                    if any(term in specific_query.lower() for term in ['revenue', 'profit', 'financial']):
-                                        if any(pattern in cell_text.lower() for pattern in 
-                                              ['revenue', 'profit', 'total', 'gross', 'net', 'income']):
-                                            if cell_text not in financial_terms and len(cell_text) < 50:
-                                                financial_terms.append(cell_text)
-                    
-                    sheet_info["companies_found"] = companies_found[:10]  # Limit to 10
-                    sheet_info["financial_terms"] = financial_terms[:10]
-                    
-                    if companies_found:
-                        relevant_data.append(f"📊 {sheet_name} - Companies: {', '.join(companies_found[:5])}")
-                    if financial_terms:
-                        relevant_data.append(f"💰 {sheet_name} - Financial: {', '.join(financial_terms[:3])}")
-                
-                else:
-                    # Basic info for non-focus sheets
-                    if worksheet.max_row > 0:
-                        first_row = []
-                        for col in range(1, min(4, worksheet.max_column + 1)):
-                            cell = worksheet.cell(row=1, column=col)
-                            if cell.value is not None:
-                                first_row.append(str(cell.value)[:30])
-                        sheet_info["first_row"] = first_row
-                
-                sheets_info[sheet_name] = sheet_info
-            
-            workbook.close()
-            
-            # Generate REAL analysis based on ACTUAL data
-            real_data_context = f"""ACTUAL EXCEL FILE DATA:
-Filename: {file.filename}
-Total Sheets: {len(sheet_names)}
-Sheet Names: {', '.join(sheet_names)}
-
-Sheet Details:"""
-            
-            for sheet_name, info in sheets_info.items():
-                real_data_context += f"\n- {sheet_name}: {info['rows']} rows × {info['columns']} columns"
-                if info.get('first_row'):
-                    real_data_context += f" (Headers: {', '.join(info['first_row'][:3])})"
-            
-            # Create intelligent response based on query and findings
-            if relevant_data and specific_query:
-                preview_response = f"""**SMART ANALYSIS - {file.filename}**
-
-**Query:** "{specific_query}"
-
-**FINDINGS FROM YOUR EXCEL DATA:**
-{chr(10).join(relevant_data)}
-
-**Sheet Structure:**
-{chr(10).join([f"• {name}: {info['rows']} rows × {info['columns']} columns" for name, info in sheets_info.items()])}
-
-**Dato Ahmad Rahman's Analysis:**
-Based on your specific query, I've analyzed the actual cell contents of your Excel file. The findings above show the real company names and data extracted from the cells, not generic structure information.
-
-*This analysis is based on actual cell-by-cell examination of your Excel data.*"""
+                print(f"🔍 Using RealExcelChatSystem for query: {specific_query}")
+                preview_response = await real_system.chat_with_excel_data(specific_query)
             else:
-                preview_response = f"""**WORKSHEET STRUCTURE - {file.filename}**
+                # For general uploads without specific query, provide structure info
+                workbook = openpyxl.load_workbook(temp_file.name, read_only=True)
+                sheet_names = workbook.sheetnames
+                workbook.close()
+
+                preview_response = f"""**EXCEL FILE STRUCTURE - {file.filename}**
 
 **Worksheets Found ({len(sheet_names)} sheets):**
 {chr(10).join([f"• {name}" for name in sheet_names])}
 
-**Sheet Dimensions:**
-{chr(10).join([f"• {name}: {info['rows']} rows × {info['columns']} columns" for name, info in sheets_info.items()])}
-
-Query: "{specific_query if specific_query else '[No specific query provided]'}"
-
 **Dato Ahmad Rahman's Analysis:**
-I can see the structure of your Excel file. For more detailed analysis of specific data within cells, please provide a more specific query about what you're looking for.
+Your Excel file has been uploaded successfully. To get detailed analysis of specific data, please provide a query about what you're looking for.
 
-*For cell-level analysis, ask specific questions like "find company names in TURN-COS-GP_RM" or "show revenue figures from PNL sheet".*"""
+*Try queries like "cost of sales infra-port", "division names", or "revenue figures over 500 million".*"""
             
         except Exception as e:
             preview_response = f"Error reading Excel file: {str(e)}"
@@ -727,13 +773,13 @@ async def list_uploaded_files():
 
 
 if __name__ == "__main__":
-    print("🏢 Starting Dato' Ahmad Rahman - Senior Finance Manager")
-    print(f"📡 LM Studio: {LM_STUDIO_BASE_URL}")
-    print(f"🤖 Model: {LM_STUDIO_MODEL}")
-    print("🇲🇾 Specialized in Malaysian Investment Holdings")
-    print("📊 Excel Analysis Ready (Upload via web interface)")
-    print("🌐 Access: http://localhost:8003")
-    print("📚 API docs: http://localhost:8003/docs")
-    print("🎯 Interactive demo: http://localhost:8003/demo")
+    print("Starting Dato' Ahmad Rahman - Senior Finance Manager")
+    print(f"LM Studio: {LM_STUDIO_BASE_URL}")
+    print(f"Model: {LM_STUDIO_MODEL}")
+    print("Specialized in Malaysian Investment Holdings")
+    print("Excel Analysis Ready (Upload via web interface)")
+    print("Access: http://localhost:8003")
+    print("API docs: http://localhost:8003/docs")
+    print("Interactive demo: http://localhost:8003/demo")
     
     uvicorn.run(app, host="0.0.0.0", port=8003)
