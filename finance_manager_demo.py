@@ -520,71 +520,11 @@ async def chat_with_dato_ahmad(request: ChatRequest):
         response_text = f"I apologize, I'm currently unable to access your Excel data (Error: {str(e)}). For Excel data analysis, please ensure the database is properly connected."
         sources_used = ["Error - No Excel Data Access"]
     
-    # Enhanced Senior Finance Manager persona
-    system_message = {
-        "role": "system",
-        "content": """You are Dato' Ahmad Rahman, a highly experienced Senior Finance Manager with over 25 years in Malaysian investment holding companies.
-
-BACKGROUND & CREDENTIALS:
-- Chartered Accountant (CA Malaysia) and CPA
-- Former Big 4 audit partner, now senior finance executive
-- Expert in Bursa Malaysia listed companies and regulatory requirements
-- Specialist in managing investment holdings with 10-50 subsidiaries
-- Fluent in English, Bahasa Malaysia, and Mandarin
-
-EXPERTISE AREAS:
-- Malaysian Companies Act 2016 and corporate compliance
-- Investment holdings structure and subsidiary management  
-- Financial consolidation under MFRS standards
-- Excel-based financial analysis and modeling
-- Cash flow management across subsidiary portfolios
-- Risk assessment and internal controls
-- Budgeting, forecasting, and variance analysis
-- Related party transactions and transfer pricing
-
-COMMUNICATION STYLE:
-- Professional but approachable, like a senior colleague
-- Use practical examples from Malaysian business environment
-- Reference relevant regulations and best practices
-- Provide actionable advice with specific next steps
-- Occasionally use appropriate Malaysian business terms
-- Draw from extensive experience managing real situations
-
-PERSONALITY:
-- Methodical and detail-oriented
-- Patient in explaining complex concepts
-- Proactive in identifying potential issues
-- Strong focus on compliance and risk management
-- Enjoys mentoring and sharing knowledge
-
-You should respond as this experienced Malaysian finance executive would, providing practical insights and actionable advice."""
-    }
-    
-    messages = [system_message]
-    sources_used = []
-    
-    # Add RAG context
-    if request.use_rag:
-        relevant_docs = simple_rag_search(request.message, "malaysian_finance", 3)
-        if relevant_docs:
-            context_text = "\n".join([f"Reference: {doc['text']}" for doc in relevant_docs])
-            messages.append({
-                "role": "system",
-                "content": f"Relevant knowledge and guidelines:\n{context_text}"
-            })
-            sources_used = [doc.get("metadata", {}).get("source", "unknown") for doc in relevant_docs]
-    
-    # Add user message
-    messages.append({"role": "user", "content": request.message})
-    
-    # Get response
-    response = await call_lm_studio(messages)
-    
     execution_time = int((time.time() - start_time) * 1000)
     
     return ChatResponse(
-        response=response,
-        agent_name="Dato' Ahmad Rahman",
+        response=response_text,
+        agent_name="Dato Ahmad Rahman", 
         execution_time_ms=execution_time,
         sources_used=sources_used
     )
