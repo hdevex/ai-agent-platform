@@ -91,6 +91,7 @@ This platform creates specialized agents for ANY task:
 ```
 /mnt/c/Users/nvntr/Documents/ai_agent_platform/
 ├── .claude/settings.local.json       # Claude Code project configuration (COMPLETE)
+├── .claude/.mcp.json                # MCP server configuration (COMPLETE)
 ├── .github/workflows/ci.yml          # CI/CD pipeline (COMPLETE)
 ├── .env.template                     # Environment config template (COMPLETE)
 ├── .gitignore                        # Comprehensive ignore patterns (COMPLETE)
@@ -151,7 +152,13 @@ This platform creates specialized agents for ANY task:
    - Tool configurations (ruff rules, black formatting, mypy type checking)
    - Test configuration with coverage requirements
 
-4. **`.env.template`** - Production-ready environment template with:
+4. **`.claude/.mcp.json`** - Proper MCP server configuration with:
+   - Project-scoped Serena server for code navigation and symbol search
+   - Context7 server for advanced code analysis and refactoring
+   - Auto-start and health checking enabled
+   - Shared team configuration following Claude Code best practices
+
+5. **`.env.template`** - Production-ready environment template with:
    - Platform configuration (API host, port, debug mode)
    - Database URLs (PostgreSQL, Redis)
    - Vector database options (Chroma, Pinecone)
