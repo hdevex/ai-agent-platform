@@ -109,7 +109,9 @@
       "Write(**/docker-compose.yml)",
       "Write(**/Dockerfile)",
       "Bash(PYTHONPATH=/mnt/c/Users/nvntr/Documents/ai_agent_platform/src python -m pytest tests/integration/test_lm_studio_integration.py::TestLMStudioIntegration::test_health_check_success -v)",
-      "Bash(PYTHONPATH=/mnt/c/Users/nvntr/Documents/ai_agent_platform/src python -c \"import ai_agent_platform.config; print(''Configuration import successful'')\")"
+      "Bash(PYTHONPATH=/mnt/c/Users/nvntr/Documents/ai_agent_platform/src python -c \"import ai_agent_platform.config; print(''Configuration import successful'')\")",
+      "Bash(git rev-list:*)",
+      "Bash(PYTHONPATH=/mnt/c/Users/nvntr/Documents/ai_agent_platform/src python -m ai_agent_platform.main)"
     ],
     "deny": [
       "Read(**/.env)",
