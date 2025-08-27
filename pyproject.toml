@@ -113,7 +113,6 @@ ignore = [
     "B008",   # do not perform function calls in argument defaults
     "B905",   # zip without explicit strict parameter
     "C901",   # too complex (let developers judge complexity)
-    "W503",   # line break before binary operator
     "E203",   # whitespace before ':' (conflicts with black)
 ]
 exclude = [
